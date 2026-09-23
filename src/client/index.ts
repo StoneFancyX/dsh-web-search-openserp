@@ -1,0 +1,87 @@
+/**
+ * Browser half: registers the OpenSERP card into the settings
+ * "plugin configuration" page (`settings.plugin.item`).
+ *
+ * The card reads and writes through the plugin's OWN endpoints
+ * (`connection.rpc` → `/api/web-search-openserp/*`). The generic settings API
+ * cannot serve a third-party namespace — `exposedNamespaces()` is an explicit
+ * allowlist — so this channel is the sanctioned route, not a workaround.
+ *
+ * Only value imports listed in the bundle's externals may appear in this
+ * graph; every other `@deepseek-ai/*` import must be type-only. Violating that
+ * does not degrade this card — it fails the whole Web UI's plugin load.
+ *
+ * @module dsh-web-search-openserp/client
+ */
+import { OPENSERP_LOCALE_NS, en, zh } from './locales.js'
+import { OpenserpCard } from './OpenserpCard.tsx'
+import { OpenserpSettingsController } from './openserp-store.js'
+import { installCardStyles } from './styles.js'
+
+export { OPENSERP_LOCALE_NS } from './locales.js'
+export { ENGINE_CHOICES, EXTRACT_MODE_CHOICES, OpenserpSettingsController } from './openserp-store.js'
+export type {
+  ConfigWrite,
+  ExtractMode,
+  OpenserpCardState,
+  OpenserpSettingsView,
+  TextField,
+  ToggleField,
+} from './openserp-store.js'
+export { OpenserpCard } from './OpenserpCard.tsx'
+export type { OpenserpCardInjected, OpenserpCardProps } from './OpenserpCard.tsx'
+
+/**
+ * The cell this card occupies.
+ *
+ * `settings.plugin.item` is a keyed slot: its owner enumerates the settings
+ * namespaces the Host exposes and dispatches one key per namespace, so a card
+ * is addressed by the namespace it edits. This must therefore equal
+ * `OPENSERP_SETTINGS_NAMESPACE` in the host half. It is repeated as a literal
+ * rather than imported because that module pulls in server-side packages that
+ * have no place in a browser bundle.
+ */
+const OPENSERP_SETTINGS_KEY = 'web-search-openserp'
+
+/**
+ * Required client services. The card registration waits on the slot
+ * declaration, so `slots` must be injected rather than read reflectively.
+ */
+export const inject = ['slots', 'locale', 'connection']
+
+/**
+ * Register the dictionaries and the card once the `settings.plugin.item`
+ * declaration is on the ledger.
+ * @param ctx - client root context.
+ */
+export function apply(ctx: any): void {
+  // The card's class names match nothing until this lands: without it the card
+  // still renders, just with browser defaults, which reads as a broken UI
+  // rather than a missing stylesheet.
+  ctx.effect(() => installCardStyles(), 'web-search-openserp: card styles')
+
+  ctx.effect(
+    () => ctx.locale.register(OPENSERP_LOCALE_NS, { zh, en }),
+    'web-search-openserp: dictionaries',
+  )
+
+  const connection = ctx.get('connection')
+  const controller = new OpenserpSettingsController(connection.rpc)
+
+  ctx.slots.inject('settings.plugin.item', function* () {
+    // The `hooks` compartment is the sanctioned way to make a store reactive:
+    // the renderer binds each entry to a selector hook and hands it over as
+    // `use<Name>` — `openserpCard` arrives at the card as `useOpenserpCard`.
+    // Binding it here instead would mean reaching for a React binder the shell
+    // no longer publishes to plugins.
+    yield ctx.slots.register(
+      {
+        name: 'settings.plugin.item',
+        key: OPENSERP_SETTINGS_KEY,
+        locale: OPENSERP_LOCALE_NS,
+        inject: () => ({ controller, hooks: { openserpCard: controller.store } }),
+      },
+      OpenserpCard,
+    )
+  })
+}

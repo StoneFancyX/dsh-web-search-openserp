@@ -1,0 +1,99 @@
+{
+  "name": "dsh-web-search-openserp",
+  "version": "0.1.0",
+  "description": "OpenSERP-backed web search provider for the DeepSeek Harness web capability seam (ctx.web) — self-hosted browser-rendered SERP API, no API key, no model turn per search",
+  "keywords": [
+    "deepseek",
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "cordis",
+    "openserp",
+    "serp",
+    "web-search",
+    "self-hosted",
+    "browser-rendered"
+  ],
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "types": "./lib/client/index.d.ts",
+      "default": "./lib/client/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/**/*.js",
+    "lib/**/*.d.ts",
+    "cordis.patch.yml"
+  ],
+  "license": "MIT",
+  "author": "StoneFancyX",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/StoneFancyX/dsh-web-search-openserp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/StoneFancyX/dsh-web-search-openserp/issues"
+  },
+  "homepage": "https://github.com/StoneFancyX/dsh-web-search-openserp#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-store",
+        "@deepseek-ai/dsh-client-ui-settings-plugins",
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-connection"
+      ]
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && npm run build:client",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build:client": "tsx scripts/build-client.ts && tsc -p tsconfig.client.json",
+    "prepare": "npm run build"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": ">=4.0.2",
+    "@deepseek-ai/dsh-settings": ">=0.1.5-rc.2",
+    "@deepseek-ai/dsh-typert-protocol": ">=0.1.5-rc.2",
+    "@deepseek-ai/dsh-typert-registry": ">=0.1.5-rc.2",
+    "@deepseek-ai/dsh-web": ">=0.1.5-rc.2"
+  },
+  "dependencies": {
+    "@deepseek-ai/schemastery": "^3.18.1"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@deepseek-ai/dsh-client-store": "^0.1.2-alpha.2",
+    "@deepseek-ai/dsh-client-ui-primitives": "^0.1.2-alpha.2",
+    "@deepseek-ai/dsh-client-ui-slots": "^0.1.2-alpha.2",
+    "@deepseek-ai/dsh-settings": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-typert-protocol": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-typert-registry": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-web": "0.1.5-rc.2",
+    "@types/node": "^22.15.0",
+    "@types/react": "^19.2.18",
+    "react": "^18.3.1",
+    "tsdown": "^0.22.14",
+    "tsx": "^4.23.12",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
