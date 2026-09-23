@@ -16,14 +16,16 @@ jobs:
           node-version: '24'
           cache: npm
 
-      # `npm ci` also runs `prepare`, which is this package's build step, so the
-      # compiled entry points the tests import exist by the time they run. It is
-      # kept as one step on purpose: installing and building are the same
-      # operation here, and splitting them would only hide that.
-      - run: npm ci
+      # `--ignore-scripts` keeps the install reproducible: the package no longer
+      # builds on install (see the build step below), which is what lets a
+      # `github:` install through pnpm succeed without an allowBuilds entry.
+      - run: npm ci --ignore-scripts
 
-      # The host and browser halves are separate TypeScript projects; the build
-      # above already compiled both, so this only re-checks the host half.
+      # The host and browser halves are separate TypeScript projects. The build
+      # is explicit because `prepare` was dropped — the compiled `lib/` is
+      # committed so that a git-hosted install needs no build at all.
+      - run: npm run build
+
       - run: npm run typecheck
 
       - run: npm test
