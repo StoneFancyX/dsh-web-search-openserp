@@ -16,10 +16,11 @@ jobs:
           node-version: '24'
           cache: npm
 
-      # `--ignore-scripts` keeps the install reproducible: the package no longer
-      # builds on install (see the build step below), which is what lets a
-      # `github:` install through pnpm succeed without an allowBuilds entry.
-      - run: npm ci --ignore-scripts
+      # No `--ignore-scripts` here: `prepare` was dropped, so `npm ci` no longer
+      # builds this package on its own — building is the explicit step below.
+      # Skipping scripts would also skip the dependency postinstalls that
+      # esbuild/rolldown rely on to materialise their platform binaries.
+      - run: npm ci
 
       # The host and browser halves are separate TypeScript projects. The build
       # is explicit because `prepare` was dropped — the compiled `lib/` is

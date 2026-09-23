@@ -33,20 +33,32 @@ The trade is latency: a rendered search costs hundreds of milliseconds to a few 
 
 ## Install
 
+```bash
+dsh plugin add github:StoneFancyX/dsh-web-search-openserp --profile web
+```
+
+One command. The repository **ships the compiled `lib/`**, so installing needs neither a TypeScript toolchain nor pnpm's build authorization.
+
+> The package deliberately has **no** `prepare` script. pnpm refuses to run a git dependency's build scripts (`ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED`) unless the package is listed under `allowBuilds`; committing the build output sidesteps that gate — without it, `dsh plugin add github:...` fails outright and installs nothing.
+
+### Working on the code
+
+```bash
+git clone https://github.com/StoneFancyX/dsh-web-search-openserp
+cd dsh-web-search-openserp
+npm install && npm run build
+dsh plugin add . --profile web
+```
+
+Re-run `npm run build` after editing `src/` — with no `prepare`, installing no longer compiles for you.
+
 ### From npm
+
+Not published to the npm registry yet (npm currently restricts new-account signups from some regions). Once it is, this section becomes:
 
 ```bash
 dsh plugin add dsh-web-search-openserp --profile web
 ```
-
-### From this repository
-
-```bash
-git clone <this repo> && cd dsh-web-search-openserp
-dsh plugin add . --profile web
-```
-
-> Installing from a working copy links the directory rather than copying it, so a later `git pull` is picked up on the next `dsh web` restart. The reverse also holds: edits made only in a copy are **not** seen by the profile.
 
 ### Either way
 

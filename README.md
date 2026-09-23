@@ -33,20 +33,32 @@ OpenSERP 走的是另一条路——它驱动真实的 Chromium——所以到�
 
 ## 安装
 
+```bash
+dsh plugin add github:StoneFancyX/dsh-web-search-openserp --profile web
+```
+
+一条命令即可。仓库里**已经包含构建好的 `lib/`**，所以安装过程既不需要 TypeScript 工具链，也不需要 pnpm 的构建授权。
+
+> 本包刻意**没有** `prepare` 脚本。pnpm 默认拒绝执行 git 依赖的构建脚本（`ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED`），除非把它写进 `allowBuilds`；把构建产物直接提交进仓库就绕开了这道授权——否则 `dsh plugin add github:...` 会直接失败，什么都装不上。
+
+### 想改代码
+
+```bash
+git clone https://github.com/StoneFancyX/dsh-web-search-openserp
+cd dsh-web-search-openserp
+npm install && npm run build
+dsh plugin add . --profile web
+```
+
+改完 `src/` 后要重新跑 `npm run build`——因为没有 `prepare`，安装不会再自动编译。
+
 ### 从 npm
+
+暂未发布到 npm registry（npm 现阶段对新账号注册有区域限制）。发布之后这一节会变成：
 
 ```bash
 dsh plugin add dsh-web-search-openserp --profile web
 ```
-
-### 从本仓库
-
-```bash
-git clone <本仓库> && cd dsh-web-search-openserp
-dsh plugin add . --profile web
-```
-
-> 从工作副本安装是**链接**该目录而非复制，所以之后的 `git pull` 会在下次 `dsh web` 重启时生效。反过来也成立：只在某些副本里做的改动，profile 是**看不到**的。
 
 ### 无论哪种方式
 
