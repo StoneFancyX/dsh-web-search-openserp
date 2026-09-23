@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      # `npm ci` also runs `prepare`, which is this package's build step, so the
+      # compiled entry points the tests import exist by the time they run. It is
+      # kept as one step on purpose: installing and building are the same
+      # operation here, and splitting them would only hide that.
+      - run: npm ci
+
+      # The host and browser halves are separate TypeScript projects; the build
+      # above already compiled both, so this only re-checks the host half.
+      - run: npm run typecheck
+
+      - run: npm test
