@@ -1,7 +1,7 @@
 {
   "name": "dsh-web-search-openserp",
   "version": "0.1.0",
-  "description": "OpenSERP-backed web search provider for the DeepSeek Harness web capability seam (ctx.web) — self-hosted browser-rendered SERP API, no API key, no model turn per search",
+  "description": "基于自建 OpenSERP 的 DeepSeek Harness web 能力接缝（ctx.web）搜索与抓取 provider——真实浏览器渲染 SERP，无需 API key，每次搜索不产生模型回合。OpenSERP-backed web search provider for the DeepSeek Harness web capability seam (ctx.web) — self-hosted browser-rendered SERP API, no API key, no model turn per search",
   "keywords": [
     "deepseek",
     "deepseek-harness",
