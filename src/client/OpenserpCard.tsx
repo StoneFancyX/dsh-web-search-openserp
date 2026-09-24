@@ -6,6 +6,14 @@
  * header stacks the plugin name over its description and carries an "unsaved"
  * pill, then the form, then Discard / Reset / Save.
  *
+ * That chrome belongs to ONE of the two mountings. 0.1.7's plugin page
+ * (`plugins.item`) draws the row itself — icon, title, enable switch, detail
+ * shell — and mounts this card once per `view`, so a card that also drew a
+ * header would stack a second disclosure inside the page's row. The card
+ * therefore hands that outlet the bare body under `embedded`, and keeps the
+ * self-drawn `<li>` for the older keyed slot that supplies no chrome. See the
+ * branch at the end of the component.
+ *
  * Unlike the sibling search cards this one edits every field the schema
  * carries, because this plugin owns TWO capabilities over ONE instance: the
  * search knobs and the fetch knobs are the same deployment's configuration, and
@@ -44,9 +52,22 @@ export interface OpenserpCardInjected {
   useOpenserpCard: <T>(select: (snapshot: OpenserpCardState) => T) => T
 }
 
+/**
+ * Which face an outlet is asking for.
+ *
+ * 0.1.7's plugin page mounts one registration once per face: `summary` supplies the row's and
+ * the detail page's one-liner, `page` supplies the configuration body. Absent means the outlet
+ * is the older keyed slot, which has no such notion.
+ */
+export type OpenserpCardView = 'summary' | 'page'
+
 /** Props delivered by the slot outlet: the inject face plus the locale seat. */
 export type OpenserpCardProps = OpenserpCardInjected & {
   t: (key: string, params?: Record<string, string>) => string
+  /** Set by an outlet that renders this card once per face. */
+  view?: OpenserpCardView
+  /** Set by an outlet whose page already draws the row chrome: icon, title, enable switch. */
+  embedded?: boolean
 }
 
 /**
@@ -54,17 +75,28 @@ export type OpenserpCardProps = OpenserpCardInjected & {
  * @param props - injected controller/hook and the synthesized `t` seat.
  * @returns the card element.
  */
-export function OpenserpCard({ controller, useOpenserpCard, t }: OpenserpCardProps): ReactNode {
+export function OpenserpCard({
+  controller,
+  useOpenserpCard,
+  t,
+  view,
+  embedded,
+}: OpenserpCardProps): ReactNode {
   const state = useOpenserpCard((snapshot) => snapshot)
-  const [open, setOpen] = useState(false)
+  // An embedded card has no header to disclose with, so its body is always shown: starting
+  // collapsed would hide the form behind a toggle that is not there.
+  const [open, setOpen] = useState(embedded === true)
   // Whether the password field shows its value in the clear. Deliberately
   // component state rather than a draft field: revealing a secret is a viewing
   // preference, so it must never reach the settings document.
   const [showPass, setShowPass] = useState(false)
 
   useEffect(() => {
+    // The one-line summary is a label, not a form. Reading the section for it would be an
+    // endpoint call per list render to fetch a string the card already carries.
+    if (view === 'summary') return
     void controller.load()
-  }, [controller])
+  }, [controller, view])
 
   const dirty = isDirty(state)
   const urlOk = isValidBaseURL(state.draft.baseURL)
@@ -111,44 +143,9 @@ export function OpenserpCard({ controller, useOpenserpCard, t }: OpenserpCardPro
     </label>
   )
 
-  return (
-    <li className="dsw-openserp-card">
-      <button
-        type="button"
-        className="dsw-openserp-card__header"
-        aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
-      >
-        <span className="dsw-openserp-card__heading">
-          <span className="dsw-openserp-card__title">{t('title')}</span>
-          <span className="dsw-openserp-card__description">{t('description')}</span>
-        </span>
-        {dirty ? <Pill>{t('dirty')}</Pill> : null}
-        {/* Disclosure indicator. Drawn inline rather than imported: the icon
-            components the built-in cards use are private to their own bundles,
-            so a third-party card cannot reach them. The glyph is decorative —
-            `aria-expanded` on the button already carries the state — hence
-            `aria-hidden`, and the rotation lives in CSS. */}
-        <svg
-          className={`dsw-openserp-card__chevron${
-            open ? ' dsw-openserp-card__chevron--open' : ''
-          }`}
-          viewBox="0 0 16 16"
-          aria-hidden="true"
-        >
-          <path
-            d="M4 6l4 4 4-4"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </button>
-
-      {open ? (
-        <div className="dsw-openserp-card__body">
+  /** The card's content: status lines, the form, and its footer. Both mountings share it. */
+  const body = (
+    <div className="dsw-openserp-card__body">
           {state.status === 'loading' ? <p>{t('loading')}</p> : null}
           {state.status === 'failed' ? (
             <p role="alert">{t('error', { message: state.error ?? '' })}</p>
@@ -328,8 +325,55 @@ export function OpenserpCard({ controller, useOpenserpCard, t }: OpenserpCardPro
               {busy ? t('saving') : t('save')}
             </Button>
           </div>
-        </div>
-      ) : null}
+    </div>
+  )
+
+  // The plugin page (0.1.7's `plugins.item`) renders the same component once per `view`:
+  // `summary` becomes the row's and the detail page's one-liner, `page` becomes the
+  // configuration body. The page supplies the icon, the title (from the slot's `label`), the
+  // enable switch and the detail chrome, so neither view draws a header of its own — a card
+  // that drew one would put a second disclosure inside the page's row. The older
+  // `settings.plugin.item` slot supplies none of that, which is why the standalone card below
+  // still draws its own.
+  if (embedded === true) return view === 'summary' ? t('description') : body
+
+  return (
+    <li className="dsw-openserp-card">
+      <button
+        type="button"
+        className="dsw-openserp-card__header"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <span className="dsw-openserp-card__heading">
+          <span className="dsw-openserp-card__title">{t('title')}</span>
+          <span className="dsw-openserp-card__description">{t('description')}</span>
+        </span>
+        {dirty ? <Pill>{t('dirty')}</Pill> : null}
+        {/* Disclosure indicator. Drawn inline rather than imported: the icon
+            components the built-in cards use are private to their own bundles,
+            so a third-party card cannot reach them. The glyph is decorative —
+            `aria-expanded` on the button already carries the state — hence
+            `aria-hidden`, and the rotation lives in CSS. */}
+        <svg
+          className={`dsw-openserp-card__chevron${
+            open ? ' dsw-openserp-card__chevron--open' : ''
+          }`}
+          viewBox="0 0 16 16"
+          aria-hidden="true"
+        >
+          <path
+            d="M4 6l4 4 4-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
+
+      {open ? body : null}
     </li>
   )
 }
