@@ -27,18 +27,37 @@ export declare const name = "web-search-openserp";
 /** The web seam this provider registers into. */
 export declare const inject: string[];
 /**
+ * One config field as {@link apply} receives it.
+ *
+ * The two supported harness lines hand the same field in different shapes:
+ * 0.1.5 passes a plain object, while 0.1.7 drops the settings service's
+ * namespace registration — the harness wires a plugin row's config itself — and
+ * passes each field as a signal, read with `.get()` at the moment of use rather
+ * than snapshotted once at `apply`.
+ */
+type ConfigField<T> = T | {
+    get(): T;
+};
+/** This plugin row's config, in whichever shape the running harness uses. */
+export type ApplyConfig = {
+    [K in keyof Config]: ConfigField<Config[K]>;
+};
+/**
  * Register the OpenSERP search provider with `ctx.web`, reading its
  * configuration through the harness settings seam when one is mounted.
  *
- * `installSettingsSection` registers {@link OPENSERP_SETTINGS_NAMESPACE} with
- * this plugin row's `config` as the composition `base`, and points the source
- * thunk at the resolved scope. When no settings service is mounted — or one
- * goes away on reload — the thunk falls back to the composition entry, so the
- * plugin behaves exactly as composed. Nothing here is conditional on a provider
- * existing.
+ * Where 0.1.5 mounts a settings service, `installSection` registers
+ * {@link OPENSERP_SETTINGS_NAMESPACE} with this plugin row's `config` as the
+ * composition `base` and points the source thunk at the resolved scope. When no
+ * settings service is mounted — or one goes away on reload — the thunk falls
+ * back to the composition entry, so the plugin behaves exactly as composed.
+ * Nothing here is conditional on a provider existing.
  *
- * The provider receives the thunk rather than a snapshot, so a settings edit
- * reaches the NEXT search without a restart while the registration stays put.
+ * Where the harness instead wires the row's config itself (0.1.7 onward) there
+ * is no section to install and the config arrives as signals; the guard below
+ * leaves those authoritative. Either way the providers read through a thunk, so
+ * a config edit reaches the NEXT search without a restart while the
+ * registration stays put.
  *
  * The configuration gateway is mounted only where a typert registry exists (the
  * web app); a headless composition simply has no browser to serve, so its
@@ -49,6 +68,6 @@ export declare const inject: string[];
  * and plugin disposal clean up on their own.
  *
  * @param ctx - plugin context carrying the web seam.
- * @param config - this plugin row's composition entry config.
+ * @param config - this plugin row's config, as a value or as signals.
  */
-export declare function apply(ctx: Context, config: Config): void;
+export declare function apply(ctx: Context, config: ApplyConfig): void;
